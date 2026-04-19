@@ -21,35 +21,39 @@
 
   <div class="panel form-stack">
     <h2>Delivered</h2>
-    <form method="post" enctype="multipart/form-data" id="delivery-form" class="form-stack">
-      <input type="hidden" name="action" value="delivered">
-      <input type="hidden" name="proof_lat" id="proof-lat">
-      <input type="hidden" name="proof_lng" id="proof-lng">
-      <input
-        class="proof-photo-input"
-        type="file"
-        id="proof-photo"
-        name="proof_photo"
-        accept="image/*"
-        required
-      >
-      <p id="capture-state" class="muted">GPS will be captured before saving.</p>
-      <div class="camera-panel is-hidden" id="camera-panel">
-        <video id="proof-camera" autoplay playsinline muted></video>
-        <canvas id="proof-canvas" class="is-hidden"></canvas>
-        <div class="action-row">
-          <button class="btn primary" type="button" id="capture-proof-button">Use Photo</button>
-          <button class="btn secondary" type="button" id="cancel-camera-button">Cancel</button>
+    {% if stop.status == "delivered" %}
+      <p class="muted">Delivery already captured.</p>
+    {% else %}
+      <form method="post" enctype="multipart/form-data" id="delivery-form" class="form-stack">
+        <input type="hidden" name="action" value="delivered">
+        <input type="hidden" name="proof_lat" id="proof-lat">
+        <input type="hidden" name="proof_lng" id="proof-lng">
+        <input
+          class="proof-photo-input"
+          type="file"
+          id="proof-photo"
+          name="proof_photo"
+          accept="image/*"
+          required
+        >
+        <p id="capture-state" class="muted">GPS will be captured before saving.</p>
+        <div class="camera-panel is-hidden" id="camera-panel">
+          <video id="proof-camera" autoplay playsinline muted></video>
+          <canvas id="proof-canvas" class="is-hidden"></canvas>
+          <div class="action-row">
+            <button class="btn primary" type="button" id="capture-proof-button">Use Photo</button>
+            <button class="btn secondary" type="button" id="cancel-camera-button">Cancel</button>
+          </div>
         </div>
-      </div>
-      <button class="btn primary" type="button" id="take-proof-button">Take Proof & Deliver</button>
-      <noscript>
-        <label>Proof Photo
-          <input type="file" name="proof_photo" accept="image/*" capture="environment" required>
-        </label>
-        <button class="btn primary" type="submit">Take Proof & Deliver</button>
-      </noscript>
-    </form>
+        <button class="btn primary" type="button" id="take-proof-button">Take Proof & Deliver</button>
+        <noscript>
+          <label>Proof Photo
+            <input type="file" name="proof_photo" accept="image/*" capture="environment" required>
+          </label>
+          <button class="btn primary" type="submit">Take Proof & Deliver</button>
+        </noscript>
+      </form>
+    {% endif %}
   </div>
 
   <div class="panel form-stack">

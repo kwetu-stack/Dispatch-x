@@ -454,6 +454,9 @@ def driver_stop(id):
     if request.method == "POST":
         action = request.form.get("action")
         if action == "delivered":
+            if stop.status == "delivered":
+                flash("Delivery already captured.", "error")
+                return redirect(url_for("driver_home"))
             photo = request.files.get("proof_photo")
             lat = request.form.get("proof_lat")
             lng = request.form.get("proof_lng")

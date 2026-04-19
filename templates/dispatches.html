@@ -6,12 +6,7 @@
     <p class="eyebrow">Control desk</p>
     <h1>Dispatches</h1>
   </div>
-  <div class="action-row">
-    {% if current_user.role == "admin" %}
-      <a class="btn secondary" href="{{ url_for('dispatch_archive_list') }}">Archive</a>
-    {% endif %}
-    <a class="btn primary" href="{{ url_for('dispatch_new') }}">Create Dispatch</a>
-  </div>
+  <a class="btn primary" href="{{ url_for('dispatch_new') }}">Create Dispatch</a>
 </section>
 
 <section class="panel">
@@ -33,12 +28,9 @@
             <td>
               <a class="btn secondary small" href="{{ url_for('dispatch_detail', id=dispatch.id) }}">View</a>
               {% if current_user.role == "admin" %}
-                {% if can_edit_dispatch(dispatch) %}
-                  <a class="btn primary small" href="{{ url_for('dispatch_edit', id=dispatch.id) }}">Edit</a>
-                {% endif %}
                 {% if can_archive_dispatch(dispatch) %}
                   <form method="post" action="{{ url_for('dispatch_archive', id=dispatch.id) }}" data-archive-form>
-                    <button class="btn danger small" type="submit">Archive</button>
+                    <button class="btn danger small" type="submit">Delete</button>
                   </form>
                 {% endif %}
               {% endif %}
@@ -55,11 +47,11 @@
 {% if current_user.role == "admin" %}
   <dialog class="archive-dialog" id="archive-dialog">
     <form method="dialog" class="archive-dialog-card">
-      <h2>Archive this dispatch?</h2>
+      <h2>Delete this dispatch?</h2>
       <p>This removes it from active dispatches.</p>
       <p>Stops and GPS history are preserved.</p>
       <div class="dialog-actions">
-        <button class="btn danger" type="button" id="confirm-archive">Archive</button>
+        <button class="btn danger" type="button" id="confirm-archive">Delete</button>
         <button class="btn secondary" value="cancel">Cancel</button>
       </div>
     </form>
