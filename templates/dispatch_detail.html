@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% set title = "Dispatch Detail | Dispatch X" %}
+{% block content %}
+<section class="section-head">
+  <div>
+    <p class="eyebrow">Dispatch #{{ dispatch.id }}</p>
+    <h1>{{ dispatch.route_name }}</h1>
+  </div>
+  <span class="badge {{ dispatch.status }}">{{ dispatch.status.replace("_", " ") }}</span>
+</section>
+
+<section class="detail-grid">
+  <div class="panel">
+    <h2>Route</h2>
+    <dl class="meta">
+      <dt>Driver</dt><dd>{{ dispatch.driver.name }}</dd>
+      <dt>Vehicle</dt><dd>{{ dispatch.vehicle_number }}</dd>
+      <dt>Date</dt><dd>{{ dispatch.date.strftime("%Y-%m-%d") }}</dd>
+      <dt>Started</dt><dd>{{ dispatch.started_at.strftime("%Y-%m-%d %H:%M") if dispatch.started_at else "Not started" }}</dd>
+      <dt>Completed</dt><dd>{{ dispatch.completed_at.strftime("%Y-%m-%d %H:%M") if dispatch.completed_at else "Not completed" }}</dd>
+    </dl>
+    {% if dispatch.status == "draft" %}
+      <form method="post">
+        <input type="hidden" name="action" value="assign">
+        <button class="btn primary" type="submit">Assign</button>
+      </form>
+    {% endif %}
+  </div>
+
+  <div class="panel">
+    <h2>Stops</h2>
+    <div class="stop-list">
+      {% for stop in dispatch.stops %}
+        <article class="stop-card">
+          <div>
+            <strong>{{ stop.sequence }}. {{ stop.customer_name }}</strong>
+            <span class="muted">{{ stop.invoice_number }} - KES {{ "%.2f"|format(stop.invoice_value) }}</span>
+          </div>
+          <span class="badge {{ stop.status }}">{{ stop.status }}</span>
+        </article>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}

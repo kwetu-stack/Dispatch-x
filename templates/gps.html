@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% set title = "Live GPS | Dispatch X" %}
+{% block head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+{% endblock %}
+{% block content %}
+<section class="section-head">
+  <div>
+    <p class="eyebrow">Live tracking</p>
+    <h1>GPS</h1>
+  </div>
+</section>
+
+<section class="map-shell">
+  <div id="map" data-markers='{{ markers|tojson }}'></div>
+</section>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="{{ url_for('static', filename='js/gps_map.js') }}"></script>
+{% endblock %}

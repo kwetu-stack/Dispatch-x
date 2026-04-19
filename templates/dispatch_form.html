@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% set title = ("Edit Dispatch" if edit_mode else "Create Dispatch") ~ " | Dispatch X" %}
+{% block content %}
+<section class="section-head">
+  <div>
+    <p class="eyebrow">{{ "Route details" if edit_mode else "New route" }}</p>
+    <h1>{{ "Edit Dispatch" if edit_mode else "Create Dispatch" }}</h1>
+  </div>
+</section>
+
+<form class="panel form-stack" method="post">
+  <div class="grid two">
+    {% if not edit_mode %}
+      <label>Date <input type="date" name="date" required value="{{ request.form.get('date') or '' }}"></label>
+    {% endif %}
+    <label>Route <input type="text" name="route_name" required placeholder="Nairobi CBD Retail" value="{{ request.form.get('route_name') or (dispatch.route_name if dispatch else '') }}"></label>
+    <label>Driver
+      <select name="driver_id" required>
+        {% for driver in drivers %}
+          <option value="{{ driver.id }}" {% if (request.form.get('driver_id') or (dispatch.driver_id|string if dispatch else '')) == driver.id|string %}selected{% endif %}>{{ driver.name }} - {{ driver.phone }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Vehicle Number <input type="text" name="vehicle_number" required placeholder="KDA 234X" value="{{ request.form.get('vehicle_number') or (dispatch.vehicle_number if dispatch else '') }}"></label>
+  </div>
+
+  {% if not edit_mode %}
+    <div class="panel-head">
+      <h2>Stops</h2>
+      <button class="btn secondary" type="button" id="add-stop">Add Another Customer / Invoice</button>
+    </div>
+    <div id="stops" class="stops-editor">
+      <div class="stop-row">
+        <input name="customer_name[]" required placeholder="Customer name">
+        <input name="invoice_number[]" required placeholder="Invoice number">
+        <input name="invoice_value[]" type="number" min="0" step="0.01" required placeholder="Invoice value">
+        <button class="btn danger small" type="button" data-remove-stop>Remove</button>
+      </div>
+    </div>
+  {% endif %}
+  <button class="btn primary" type="submit">{{ "Save Changes" if edit_mode else "Save Dispatch" }}</button>
+</form>
+{% if not edit_mode %}
+  <script src="{{ url_for('static', filename='js/dispatch_form.js') }}"></script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% set title = "Stop Detail | Dispatch X" %}
+{% block content %}
+<section class="section-head">
+  <div>
+    <p class="eyebrow">Stop {{ stop.sequence }}</p>
+    <h1>{{ stop.customer_name }}</h1>
+  </div>
+  <span class="badge {{ stop.status }}">{{ stop.status }}</span>
+</section>
+
+<section class="detail-grid">
+  <div class="panel">
+    <h2>Invoice</h2>
+    <dl class="meta">
+      <dt>Invoice</dt><dd>{{ stop.invoice_number }}</dd>
+      <dt>Amount</dt><dd>KES {{ "%.2f"|format(stop.invoice_value) }}</dd>
+      <dt>Route</dt><dd>{{ stop.dispatch.route_name }}</dd>
+    </dl>
+  </div>
+
+  <div class="panel form-stack">
+    <h2>Delivered</h2>
+    <form method="post" enctype="multipart/form-data" id="delivery-form" class="form-stack">
+      <input type="hidden" name="action" value="delivered">
+      <input type="hidden" name="proof_lat" id="proof-lat">
+      <input type="hidden" name="proof_lng" id="proof-lng">
+      <input
+        class="proof-photo-input"
+        type="file"
+        id="proof-photo"
+        name="proof_photo"
+        accept="image/*"
+        required
+      >
+      <p id="capture-state" class="muted">GPS will be captured before saving.</p>
+      <div class="camera-panel is-hidden" id="camera-panel">
+        <video id="proof-camera" autoplay playsinline muted></video>
+        <canvas id="proof-canvas" class="is-hidden"></canvas>
+        <div class="action-row">
+          <button class="btn primary" type="button" id="capture-proof-button">Use Photo</button>
+          <button class="btn secondary" type="button" id="cancel-camera-button">Cancel</button>
+        </div>
+      </div>
+      <button class="btn primary" type="button" id="take-proof-button">Take Proof & Deliver</button>
+      <noscript>
+        <label>Proof Photo
+          <input type="file" name="proof_photo" accept="image/*" capture="environment" required>
+        </label>
+        <button class="btn primary" type="submit">Take Proof & Deliver</button>
+      </noscript>
+    </form>
+  </div>
+
+  <div class="panel form-stack">
+    <h2>Returned</h2>
+    <form method="post" class="form-stack">
+      <input type="hidden" name="action" value="returned">
+      <label>Reason
+        <select name="returned_reason" required>
+          <option value="">Select reason</option>
+          <option>Customer closed</option>
+          <option>Customer rejected goods</option>
+          <option>Wrong invoice</option>
+          <option>Stock damaged</option>
+          <option>Payment issue</option>
+        </select>
+      </label>
+      <label>Notes
+        <textarea name="notes" rows="4" placeholder="Optional notes"></textarea>
+      </label>
+      <button class="btn danger" type="submit">Returned</button>
+    </form>
+  </div>
+</section>
+<script src="{{ url_for('static', filename='js/stop_detail.js') }}"></script>
+{% endblock %}

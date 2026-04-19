@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% set title = "My Dispatch | Dispatch X" %}
+{% block content %}
+<section class="section-head">
+  <div>
+    <p class="eyebrow">Driver console</p>
+    <h1>My Dispatch</h1>
+  </div>
+</section>
+
+{% if dispatch %}
+  <section class="panel">
+    <div class="driver-summary">
+      <div>
+        <span class="muted">Route</span>
+        <strong>{{ dispatch.route_name }}</strong>
+      </div>
+      <div>
+        <span class="muted">Vehicle</span>
+        <strong>{{ dispatch.vehicle_number }}</strong>
+      </div>
+      <div>
+        <span class="muted">Total Stops</span>
+        <strong>{{ dispatch.stops|length }}</strong>
+      </div>
+      <div>
+        <span class="muted">Status</span>
+        <span class="badge {{ dispatch.status }}">{{ dispatch.status.replace("_", " ") }}</span>
+      </div>
+    </div>
+    {% if dispatch.status == "assigned" %}
+      <form method="post">
+        <button class="btn primary" type="submit">Start Trip</button>
+      </form>
+    {% endif %}
+  </section>
+
+  {% if dispatch.status == "in_progress" %}
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Stops</h2>
+        <span id="gps-state" class="muted">GPS waiting for permission</span>
+      </div>
+      <div class="stop-list">
+        {% for stop in dispatch.stops %}
+          <a class="stop-card link-card" href="{{ url_for('driver_stop', id=stop.id) }}">
+            <div>
+              <strong>Stop {{ stop.sequence }}: {{ stop.customer_name }}</strong>
+              <span class="muted">{{ stop.invoice_number }} - KES {{ "%.2f"|format(stop.invoice_value) }}</span>
+            </div>
+            <span class="badge {{ stop.status }}">{{ stop.status }}</span>
+          </a>
+        {% endfor %}
+      </div>
+    </section>
+    <script src="{{ url_for('static', filename='js/gps_tracker.js') }}"></script>
+  {% endif %}
+{% else %}
+  <section class="panel empty-state">
+    <h2>No active dispatch assigned</h2>
+    <p class="muted">Your next route will appear here once the desk assigns it.</p>
+  </section>
+{% endif %}
+{% endblock %}

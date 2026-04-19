@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% set title = "Login | Dispatch X" %}
+{% block content %}
+<section class="auth-shell">
+  <form class="auth-card" method="post">
+    <div>
+      <p class="eyebrow">FMCG delivery control</p>
+      <h1>Sign in</h1>
+      <p class="muted">Track dispatches, proof of delivery, and live driver GPS.</p>
+    </div>
+    <label>
+      Phone
+      <input name="phone" type="tel" required placeholder="0700000001">
+    </label>
+    <label>
+      Password
+      <input name="password" type="password" required placeholder="admin123">
+    </label>
+    <button class="btn primary" type="submit">Login</button>
+  </form>
+</section>
+{% endblock %}

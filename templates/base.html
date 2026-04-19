@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title or "Dispatch X" }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  {% block head %}{% endblock %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="{{ url_for('dashboard') if current_user and current_user.role != 'driver' else (url_for('driver_home') if current_user else url_for('login')) }}">
+      <span class="brand-mark">DX</span>
+      <span>Dispatch X</span>
+    </a>
+    {% if current_user %}
+      <nav class="nav">
+        {% if current_user.role in ["admin", "clerk"] %}
+          <a href="{{ url_for('dashboard') }}">Dashboard</a>
+          <a href="{{ url_for('dispatches') }}">Dispatches</a>
+          <a href="{{ url_for('dispatch_new') }}">Create</a>
+          <a href="{{ url_for('gps') }}">GPS</a>
+        {% else %}
+          <a href="{{ url_for('driver_home') }}">My Dispatch</a>
+        {% endif %}
+        <span class="user-pill">{{ current_user.name }}</span>
+        <a href="{{ url_for('logout') }}">Logout</a>
+      </nav>
+    {% endif %}
+  </header>
+
+  <main class="page">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-wrap">
+          {% for category, message in messages %}
+            <div class="flash {{ category }}">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

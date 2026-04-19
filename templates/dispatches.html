@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% set title = "Dispatches | Dispatch X" %}
+{% block content %}
+<section class="section-head">
+  <div>
+    <p class="eyebrow">Control desk</p>
+    <h1>Dispatches</h1>
+  </div>
+  <a class="btn primary" href="{{ url_for('dispatch_new') }}">Create Dispatch</a>
+</section>
+
+<section class="panel">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Date</th><th>Route</th><th>Driver</th><th>Vehicle</th><th>Status</th><th>Progress</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+        {% for dispatch in dispatches %}
+          {% set done = dispatch.stops|selectattr("status", "ne", "pending")|list|length %}
+          <tr>
+            <td>{{ dispatch.date.strftime("%Y-%m-%d") }}</td>
+            <td><a href="{{ url_for('dispatch_detail', id=dispatch.id) }}">{{ dispatch.route_name }}</a></td>
+            <td>{{ dispatch.driver.name }}</td>
+            <td>{{ dispatch.vehicle_number }}</td>
+            <td><span class="badge {{ dispatch.status }}">{{ dispatch.status.replace("_", " ") }}</span></td>
+            <td>{{ done }}/{{ dispatch.stops|length }}</td>
+            <td>
+              <a class="btn secondary small" href="{{ url_for('dispatch_detail', id=dispatch.id) }}">View</a>
+              {% if current_user.role == "admin" %}
+                {% if can_edit_dispatch(dispatch) %}
+                  <a class="btn primary small" href="{{ url_for('dispatch_edit', id=dispatch.id) }}">Edit</a>
+                {% endif %}
+                {% if can_archive_dispatch(dispatch) %}
+                  <form method="post" action="{{ url_for('dispatch_archive', id=dispatch.id) }}" data-archive-form>
+                    <button class="btn danger small" type="submit">Archive</button>
+                  </form>
+                {% endif %}
+              {% endif %}
+            </td>
+          </tr>
+        {% else %}
+          <tr><td colspan="7" class="muted">No dispatches found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+{% if current_user.role == "admin" %}
+  <dialog class="archive-dialog" id="archive-dialog">
+    <form method="dialog" class="archive-dialog-card">
+      <h2>Archive this dispatch?</h2>
+      <p>This removes it from active dispatches.</p>
+      <p>Stops and GPS history are preserved.</p>
+      <div class="dialog-actions">
+        <button class="btn danger" type="button" id="confirm-archive">Archive</button>
+        <button class="btn secondary" value="cancel">Cancel</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script>
+    const archiveDialog = document.getElementById("archive-dialog");
+    const confirmArchive = document.getElementById("confirm-archive");
+    let pendingArchiveForm = null;
+
+    document.querySelectorAll("[data-archive-form]").forEach((form) => {
+      form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        pendingArchiveForm = form;
+        archiveDialog.showModal();
+      });
+    });
+
+    confirmArchive.addEventListener("click", () => {
+      if (pendingArchiveForm) {
+        pendingArchiveForm.submit();
+      }
+    });
+  </script>
+{% endif %}
+{% endblock %}

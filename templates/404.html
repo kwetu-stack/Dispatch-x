@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% set title = "Page Not Found | Dispatch X" %}
+{% block content %}
+<section class="panel empty-state">
+  <p class="eyebrow">System</p>
+  <h1>{{ message or "Page not found." }}</h1>
+  {% if current_user %}
+    <a class="btn primary" href="{{ url_for('driver_home') if current_user.role == 'driver' else url_for('dashboard') }}">Back home</a>
+  {% else %}
+    <a class="btn primary" href="{{ url_for('login') }}">Login</a>
+  {% endif %}
+</section>
+{% endblock %}
