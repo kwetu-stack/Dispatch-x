@@ -1,6 +1,7 @@
 import os
-from datetime import date, datetime
+from datetime import datetime, timezone
 from functools import wraps
+from zoneinfo import ZoneInfo
 
 from flask import (
     Flask,
@@ -23,6 +24,7 @@ from werkzeug.utils import secure_filename
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 DATA_DIR = os.path.join(BASE_DIR, "data")
 UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
+APP_TIMEZONE = ZoneInfo("Africa/Nairobi")
 
 os.makedirs(DATA_DIR, exist_ok=True)
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -33,8 +35,30 @@ app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + os.path.join(DATA_DIR, "a
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["UPLOAD_FOLDER"] = UPLOAD_DIR
 app.config["MAX_CONTENT_LENGTH"] = 8 * 1024 * 1024
+app.config["TIMEZONE"] = "Africa/Nairobi"
 
 db = SQLAlchemy(app)
+
+
+def utc_now():
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
+def kenya_today():
+    return datetime.now(APP_TIMEZONE).date()
+
+
+def to_kenya_time(value):
+    if not value:
+        return None
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=timezone.utc)
+    return value.astimezone(APP_TIMEZONE)
+
+
+def format_kenya_datetime(value, fmt="%Y-%m-%d %H:%M"):
+    kenya_time = to_kenya_time(value)
+    return kenya_time.strftime(fmt) if kenya_time else ""
 
 
 class User(db.Model):
@@ -44,7 +68,7 @@ class User(db.Model):
     role = db.Column(db.String(20), nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
     is_active = db.Column(db.Boolean, default=True, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=utc_now, nullable=False)
 
     dispatches = db.relationship("Dispatch", foreign_keys="Dispatch.driver_id", backref="driver")
 
@@ -59,7 +83,7 @@ class Dispatch(db.Model):
     started_at = db.Column(db.DateTime)
     completed_at = db.Column(db.DateTime)
     created_by = db.Column(db.Integer, db.ForeignKey("user.id"))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=utc_now, nullable=False)
     is_deleted = db.Column(db.Boolean, default=False, nullable=False)
     deleted_at = db.Column(db.DateTime)
     deleted_by = db.Column(db.Integer, db.ForeignKey("user.id"))
@@ -92,7 +116,7 @@ class Stop(db.Model):
     proof_lat = db.Column(db.Float)
     proof_lng = db.Column(db.Float)
     notes = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=utc_now, nullable=False)
 
 
 class GPSLog(db.Model):
@@ -101,7 +125,7 @@ class GPSLog(db.Model):
     driver_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
     latitude = db.Column(db.Float, nullable=False)
     longitude = db.Column(db.Float, nullable=False)
-    recorded_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    recorded_at = db.Column(db.DateTime, default=utc_now, nullable=False)
 
     driver = db.relationship("User")
 
@@ -117,6 +141,7 @@ def inject_user():
         "current_user": current_user(),
         "can_edit_dispatch": can_edit_dispatch,
         "can_archive_dispatch": can_archive_dispatch,
+        "format_kenya_datetime": format_kenya_datetime,
     }
 
 
@@ -203,7 +228,7 @@ def refresh_dispatch_status(dispatch):
         return
     if all(stop.status in {"delivered", "returned"} for stop in dispatch.stops):
         dispatch.status = "completed"
-        dispatch.completed_at = dispatch.completed_at or datetime.utcnow()
+        dispatch.completed_at = dispatch.completed_at or utc_now()
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -233,7 +258,7 @@ def logout():
 @app.route("/")
 @admin_or_clerk()
 def dashboard():
-    today = date.today()
+    today = kenya_today()
     today_dispatches = active_dispatch_query().filter(Dispatch.date == today).count()
     delivered = Stop.query.join(Dispatch).filter(Dispatch.date == today, Dispatch.is_deleted.is_(False), Stop.status == "delivered").count()
     pending = Stop.query.join(Dispatch).filter(Dispatch.date == today, Dispatch.is_deleted.is_(False), Stop.status == "pending").count()
@@ -352,7 +377,7 @@ def dispatch_archive(id):
         return redirect(url_for("dispatches"))
 
     dispatch.is_deleted = True
-    dispatch.deleted_at = datetime.utcnow()
+    dispatch.deleted_at = utc_now()
     dispatch.deleted_by = current_user().id
     db.session.commit()
     flash("Dispatch archived successfully.", "success")
@@ -368,7 +393,7 @@ def gps():
             "route": dispatch.route_name,
             "lat": log.latitude,
             "lng": log.longitude,
-            "last_update": log.recorded_at.strftime("%Y-%m-%d %H:%M:%S"),
+            "last_update": format_kenya_datetime(log.recorded_at, "%Y-%m-%d %H:%M:%S"),
         }
         for log, user, dispatch in latest_driver_points()
     ]
@@ -395,7 +420,7 @@ def driver_home():
             flash("Dispatch must have at least one stop before starting.", "error")
         elif dispatch.status == "assigned":
             dispatch.status = "in_progress"
-            dispatch.started_at = datetime.utcnow()
+            dispatch.started_at = utc_now()
             db.session.commit()
             flash("Trip started. GPS tracking is active.", "success")
         return redirect(url_for("driver_home"))
@@ -429,10 +454,10 @@ def driver_stop(id):
                 flash("GPS capture is required before delivery can be saved.", "error")
             else:
                 filename = secure_filename(photo.filename)
-                stored_name = f"stop_{stop.id}_{int(datetime.utcnow().timestamp())}_{filename}"
+                stored_name = f"stop_{stop.id}_{int(utc_now().timestamp())}_{filename}"
                 photo.save(os.path.join(app.config["UPLOAD_FOLDER"], stored_name))
                 stop.status = "delivered"
-                stop.delivered_at = datetime.utcnow()
+                stop.delivered_at = utc_now()
                 stop.proof_photo = stored_name
                 stop.proof_lat = float(lat)
                 stop.proof_lng = float(lng)
@@ -531,16 +556,16 @@ def seed_data():
     db.session.flush()
 
     d1 = Dispatch(
-        date=date.today(),
+        date=kenya_today(),
         route_name="Nairobi CBD Retail",
         driver_id=users[2].id,
         vehicle_number="KDA 234X",
         status="in_progress",
-        started_at=datetime.utcnow(),
+        started_at=utc_now(),
         created_by=users[0].id,
     )
     d2 = Dispatch(
-        date=date.today(),
+        date=kenya_today(),
         route_name="Westlands FMCG Loop",
         driver_id=users[3].id,
         vehicle_number="KCB 918Q",
@@ -552,7 +577,7 @@ def seed_data():
 
     db.session.add_all(
         [
-            Stop(dispatch_id=d1.id, sequence=1, customer_name="Kwetu Mini Mart", invoice_number="INV-1001", invoice_value=24850, status="delivered", delivered_at=datetime.utcnow(), proof_lat=-1.286389, proof_lng=36.817223, proof_photo="seed_delivery.txt"),
+            Stop(dispatch_id=d1.id, sequence=1, customer_name="Kwetu Mini Mart", invoice_number="INV-1001", invoice_value=24850, status="delivered", delivered_at=utc_now(), proof_lat=-1.286389, proof_lng=36.817223, proof_photo="seed_delivery.txt"),
             Stop(dispatch_id=d1.id, sequence=2, customer_name="Metro Fresh Stores", invoice_number="INV-1002", invoice_value=18300, status="pending"),
             Stop(dispatch_id=d1.id, sequence=3, customer_name="City Basket", invoice_number="INV-1003", invoice_value=9750, status="returned", returned_reason="Shop closed"),
             Stop(dispatch_id=d2.id, sequence=1, customer_name="Parklands Grocer", invoice_number="INV-2001", invoice_value=31400, status="pending"),

@@ -16,8 +16,8 @@
       <dt>Driver</dt><dd>{{ dispatch.driver.name }}</dd>
       <dt>Vehicle</dt><dd>{{ dispatch.vehicle_number }}</dd>
       <dt>Date</dt><dd>{{ dispatch.date.strftime("%Y-%m-%d") }}</dd>
-      <dt>Started</dt><dd>{{ dispatch.started_at.strftime("%Y-%m-%d %H:%M") if dispatch.started_at else "Not started" }}</dd>
-      <dt>Completed</dt><dd>{{ dispatch.completed_at.strftime("%Y-%m-%d %H:%M") if dispatch.completed_at else "Not completed" }}</dd>
+      <dt>Started</dt><dd>{{ format_kenya_datetime(dispatch.started_at) if dispatch.started_at else "Not started" }}</dd>
+      <dt>Completed</dt><dd>{{ format_kenya_datetime(dispatch.completed_at) if dispatch.completed_at else "Not completed" }}</dd>
     </dl>
     {% if dispatch.status == "draft" %}
       <form method="post">
@@ -35,6 +35,9 @@
           <div>
             <strong>{{ stop.sequence }}. {{ stop.customer_name }}</strong>
             <span class="muted">{{ stop.invoice_number }} - KES {{ "%.2f"|format(stop.invoice_value) }}</span>
+            {% if stop.delivered_at %}
+              <span class="muted">Delivered {{ format_kenya_datetime(stop.delivered_at) }}</span>
+            {% endif %}
           </div>
           <span class="badge {{ stop.status }}">{{ stop.status }}</span>
         </article>
