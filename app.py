@@ -489,17 +489,45 @@ def page_not_found(_):
     return render_template("404.html", message="That page could not be found."), 404
 
 
+def is_production_runtime():
+    return bool(os.environ.get("RAILWAY_ENVIRONMENT") or os.environ.get("RAILWAY_PROJECT_ID")) or os.environ.get("FLASK_ENV") == "production"
+
+
+def should_seed_demo_data():
+    if is_production_runtime():
+        return False
+    return os.environ.get("FLASK_ENV") == "development" or os.environ.get("DISPATCH_X_SEED_DEMO") == "1"
+
+
+def get_or_create_user(name, phone, role, password):
+    user = User.query.filter_by(phone=phone).first()
+    if user:
+        return user
+    user = User(name=name, phone=phone, role=role, password_hash=generate_password_hash(password))
+    db.session.add(user)
+    return user
+
+
+def seed_auth_users():
+    get_or_create_user("Admin User", "0700000001", "admin", "admin123")
+    get_or_create_user("Dispatch Clerk", "0700000002", "clerk", "clerk123")
+    db.session.commit()
+
+
 def seed_data():
-    if User.query.first():
+    if not should_seed_demo_data() or Dispatch.query.first():
         return
 
+    admin = get_or_create_user("Admin User", "0700000001", "admin", "admin123")
+    clerk = get_or_create_user("Dispatch Clerk", "0700000002", "clerk", "clerk123")
+    driver_one = get_or_create_user("James Mwangi", "0700000003", "driver", "driver123")
+    driver_two = get_or_create_user("Amina Otieno", "0700000004", "driver", "driver123")
     users = [
-        User(name="Admin User", phone="0700000001", role="admin", password_hash=generate_password_hash("admin123")),
-        User(name="Dispatch Clerk", phone="0700000002", role="clerk", password_hash=generate_password_hash("clerk123")),
-        User(name="James Mwangi", phone="0700000003", role="driver", password_hash=generate_password_hash("driver123")),
-        User(name="Amina Otieno", phone="0700000004", role="driver", password_hash=generate_password_hash("driver123")),
+        admin,
+        clerk,
+        driver_one,
+        driver_two,
     ]
-    db.session.add_all(users)
     db.session.flush()
 
     d1 = Dispatch(
@@ -560,6 +588,7 @@ def ensure_dispatch_archive_columns():
 def init_db():
     db.create_all()
     ensure_dispatch_archive_columns()
+    seed_auth_users()
     seed_data()
 
 
