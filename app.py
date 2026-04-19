@@ -22,8 +22,13 @@ from werkzeug.utils import secure_filename
 
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-DATA_DIR = os.path.join(BASE_DIR, "data")
-UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
+
+if os.getenv("RAILWAY_ENVIRONMENT"):
+    DATA_DIR = "/data"
+    UPLOAD_DIR = "/data/uploads"
+else:
+    DATA_DIR = os.path.join(BASE_DIR, "data")
+    UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
 APP_TIMEZONE = ZoneInfo("Africa/Nairobi")
 
 os.makedirs(DATA_DIR, exist_ok=True)
