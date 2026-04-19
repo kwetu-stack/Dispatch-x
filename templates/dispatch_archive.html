@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% set title = "Archive | Dispatch X" %}
+{% block content %}
+<section class="section-head">
+  <div>
+    <p class="eyebrow">Archived dispatches</p>
+    <h1>Archive</h1>
+  </div>
+  <a class="btn secondary" href="{{ url_for('dispatches') }}">Active Dispatches</a>
+</section>
+
+<section class="panel">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Date</th><th>Route</th><th>Driver</th><th>Vehicle</th><th>Status</th><th>Archived</th><th>Stops</th></tr>
+      </thead>
+      <tbody>
+        {% for dispatch in dispatches %}
+          <tr>
+            <td>{{ dispatch.date.strftime("%Y-%m-%d") }}</td>
+            <td>{{ dispatch.route_name }}</td>
+            <td>{{ dispatch.driver.name }}</td>
+            <td>{{ dispatch.vehicle_number }}</td>
+            <td><span class="badge {{ dispatch.status }}">{{ dispatch.status.replace("_", " ") }}</span></td>
+            <td>{{ format_kenya_datetime(dispatch.deleted_at) if dispatch.deleted_at else "Archived" }}</td>
+            <td>{{ dispatch.stops|length }}</td>
+          </tr>
+        {% else %}
+          <tr><td colspan="7" class="muted">No archived dispatches found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

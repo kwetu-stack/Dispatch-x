@@ -183,6 +183,10 @@ def active_dispatch_query():
     return Dispatch.query.filter(Dispatch.is_deleted.is_(False))
 
 
+def archived_dispatch_query():
+    return Dispatch.query.filter(Dispatch.is_deleted.is_(True))
+
+
 def active_dispatch_or_404(id):
     return active_dispatch_query().filter(Dispatch.id == id).first_or_404()
 
@@ -287,6 +291,13 @@ def dashboard():
 def dispatches():
     rows = active_dispatch_query().order_by(Dispatch.date.desc(), Dispatch.created_at.desc()).all()
     return render_template("dispatches.html", dispatches=rows)
+
+
+@app.route("/dispatches/archive")
+@admin_required()
+def dispatch_archive_list():
+    rows = archived_dispatch_query().order_by(Dispatch.deleted_at.desc(), Dispatch.created_at.desc()).all()
+    return render_template("dispatch_archive.html", dispatches=rows)
 
 
 @app.route("/dispatches/new", methods=["GET", "POST"])
