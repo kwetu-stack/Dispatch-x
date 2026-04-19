@@ -37,6 +37,13 @@
             <span class="muted">{{ stop.invoice_number }} - KES {{ "%.2f"|format(stop.invoice_value) }}</span>
             {% if stop.delivered_at %}
               <span class="muted">Delivered {{ format_kenya_datetime(stop.delivered_at) }}</span>
+              <span class="muted">Delivered by {{ dispatch.driver.name }}</span>
+              {% if stop.proof_lat is not none and stop.proof_lng is not none %}
+                <span class="muted">GPS {{ "%.6f"|format(stop.proof_lat) }}, {{ "%.6f"|format(stop.proof_lng) }}</span>
+              {% endif %}
+              {% if stop.proof_photo %}
+                <a class="btn secondary small" href="{{ url_for('uploaded_file', filename=stop.proof_photo) }}" target="_blank" rel="noopener">View proof photo</a>
+              {% endif %}
             {% endif %}
           </div>
           <span class="badge {{ stop.status }}">{{ stop.status }}</span>
