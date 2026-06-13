@@ -30,6 +30,18 @@ else:
     DATA_DIR = os.path.join(BASE_DIR, "data")
     UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
 APP_TIMEZONE = ZoneInfo("Africa/Nairobi")
+TRUCKS = [f"Truck {number}" for number in range(1, 8)]
+AUTH_USERS = [
+    ("Admin", "admin", "admin", "admin1", "0700000001"),
+    ("Dispatcher", "dispatcher", "clerk", "dispatch1", "0700000002"),
+    ("Driver 1", "driver1", "driver", "driver1", "0700000003"),
+    ("Driver 2", "driver2", "driver", "driver2", "0700000004"),
+    ("Driver 3", "driver3", "driver", "driver3", None),
+    ("Driver 4", "driver4", "driver", "driver4", None),
+    ("Driver 5", "driver5", "driver", "driver5", None),
+    ("Driver 6", "driver6", "driver", "driver6", None),
+    ("Driver 7", "driver7", "driver", "driver7", None),
+]
 
 os.makedirs(DATA_DIR, exist_ok=True)
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -254,7 +266,7 @@ def login():
             if target:
                 return redirect(target)
             return redirect(url_for("driver_home" if user.role == "driver" else "dashboard"))
-        flash("Invalid phone or password.", "error")
+        flash("Invalid username or password.", "error")
     return render_template("login.html")
 
 
@@ -320,7 +332,7 @@ def dispatch_new():
         ]
         if not cleaned_stops:
             flash("Add at least one stop before saving a dispatch.", "error")
-            return render_template("dispatch_form.html", drivers=drivers)
+            return render_template("dispatch_form.html", drivers=drivers, trucks=TRUCKS)
 
         dispatch = Dispatch(
             date=datetime.strptime(request.form["date"], "%Y-%m-%d").date(),
@@ -345,7 +357,7 @@ def dispatch_new():
         db.session.commit()
         flash("Dispatch created and assigned.", "success")
         return redirect(url_for("dispatch_detail", id=dispatch.id))
-    return render_template("dispatch_form.html", drivers=drivers)
+    return render_template("dispatch_form.html", drivers=drivers, trucks=TRUCKS)
 
 
 @app.route("/dispatches/<int:id>", methods=["GET", "POST"])
@@ -381,7 +393,7 @@ def dispatch_edit(id):
         db.session.commit()
         flash("Dispatch updated successfully.", "success")
         return redirect(url_for("dispatch_detail", id=id))
-    return render_template("dispatch_form.html", dispatch=dispatch, drivers=drivers, edit_mode=True)
+    return render_template("dispatch_form.html", dispatch=dispatch, drivers=drivers, trucks=TRUCKS, edit_mode=True)
 
 
 @app.route("/dispatches/<int:id>/archive", methods=["POST"])
@@ -543,18 +555,28 @@ def should_seed_demo_data():
     return os.environ.get("FLASK_ENV") == "development" or os.environ.get("DISPATCH_X_SEED_DEMO") == "1"
 
 
-def get_or_create_user(name, phone, role, password):
-    user = User.query.filter_by(phone=phone).first()
-    if user:
-        return user
-    user = User(name=name, phone=phone, role=role, password_hash=generate_password_hash(password))
-    db.session.add(user)
+def get_or_create_user(name, username, role, password, legacy_phone=None):
+    user = User.query.filter_by(phone=username).first()
+    set_password = False
+    if not user and legacy_phone:
+        user = User.query.filter_by(phone=legacy_phone).first()
+        set_password = bool(user)
+    if not user:
+        user = User()
+        db.session.add(user)
+        set_password = True
+    user.name = name
+    user.phone = username
+    user.role = role
+    if set_password:
+        user.password_hash = generate_password_hash(password)
+    user.is_active = True
     return user
 
 
 def seed_auth_users():
-    get_or_create_user("Admin User", "0700000001", "admin", "admin123")
-    get_or_create_user("Dispatch Clerk", "0700000002", "clerk", "clerk123")
+    for account in AUTH_USERS:
+        get_or_create_user(*account)
     db.session.commit()
 
 
@@ -562,10 +584,10 @@ def seed_data():
     if not should_seed_demo_data() or Dispatch.query.first():
         return
 
-    admin = get_or_create_user("Admin User", "0700000001", "admin", "admin123")
-    clerk = get_or_create_user("Dispatch Clerk", "0700000002", "clerk", "clerk123")
-    driver_one = get_or_create_user("James Mwangi", "0700000003", "driver", "driver123")
-    driver_two = get_or_create_user("Amina Otieno", "0700000004", "driver", "driver123")
+    admin = get_or_create_user(*AUTH_USERS[0])
+    clerk = get_or_create_user(*AUTH_USERS[1])
+    driver_one = get_or_create_user(*AUTH_USERS[2])
+    driver_two = get_or_create_user(*AUTH_USERS[3])
     users = [
         admin,
         clerk,
@@ -578,7 +600,7 @@ def seed_data():
         date=kenya_today(),
         route_name="Nairobi CBD Retail",
         driver_id=users[2].id,
-        vehicle_number="KDA 234X",
+        vehicle_number=TRUCKS[0],
         status="in_progress",
         started_at=utc_now(),
         created_by=users[0].id,
@@ -587,7 +609,7 @@ def seed_data():
         date=kenya_today(),
         route_name="Westlands FMCG Loop",
         driver_id=users[3].id,
-        vehicle_number="KCB 918Q",
+        vehicle_number=TRUCKS[1],
         status="assigned",
         created_by=users[1].id,
     )

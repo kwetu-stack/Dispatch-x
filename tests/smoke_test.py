@@ -3,7 +3,7 @@ import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from app import Dispatch, Stop, User, app, db
+from app import Dispatch, Stop, TRUCKS, User, app, db
 
 
 def login(client, phone, password):
@@ -16,6 +16,8 @@ def assert_ok(response, path):
 
 def run():
     with app.app_context():
+        assert len(TRUCKS) == 7, "Expected exactly seven trucks."
+        assert User.query.filter_by(role="driver", is_active=True).count() == 7, "Expected exactly seven active drivers."
         active_dispatch = Dispatch.query.filter_by(is_deleted=False).order_by(Dispatch.id.desc()).first()
         assert active_dispatch, "No active dispatch found for smoke test."
         driver_dispatch = (
@@ -36,12 +38,12 @@ def run():
 
     with app.test_client() as client:
         assert_ok(client.get("/login"), "/login")
-        login(client, "0700000001", "admin123")
+        login(client, "admin", "admin1")
         for path in ["/", "/dispatches", f"/dispatches/{active_dispatch.id}", "/gps"]:
             assert_ok(client.get(path), path)
 
     with app.test_client() as client:
-        login(client, driver.phone, "driver123")
+        login(client, driver.phone, driver.phone)
         assert_ok(client.get("/driver"), "/driver")
         stop_path = f"/driver/stop/{pending_stop.id}"
         stop_response = client.get(stop_path)

@@ -21,7 +21,17 @@
         {% endfor %}
       </select>
     </label>
-    <label>Vehicle Number <input type="text" name="vehicle_number" required placeholder="KDA 234X" value="{{ request.form.get('vehicle_number') or (dispatch.vehicle_number if dispatch else '') }}"></label>
+    <label>Truck
+      {% set selected_truck = request.form.get('vehicle_number') or (dispatch.vehicle_number if dispatch else '') %}
+      <select name="vehicle_number" required>
+        {% if selected_truck and selected_truck not in trucks %}
+          <option value="{{ selected_truck }}" selected>{{ selected_truck }}</option>
+        {% endif %}
+        {% for truck in trucks %}
+          <option value="{{ truck }}" {% if selected_truck == truck %}selected{% endif %}>{{ truck }}</option>
+        {% endfor %}
+      </select>
+    </label>
   </div>
 
   {% if not edit_mode %}
